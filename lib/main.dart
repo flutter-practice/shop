@@ -10,8 +10,21 @@ import 'package:shop/views/cart_view.dart';
 import 'package:shop/views/orders_view.dart';
 import 'package:shop/views/product_detail_view.dart';
 import 'package:shop/views/products_overview_view.dart';
+import 'dart:io';
 
-void main() => runApp(MyApp());
+class MyHttpOverrides extends HttpOverrides {
+  @override
+  HttpClient createHttpClient(SecurityContext context) {
+    return super.createHttpClient(context)
+      ..badCertificateCallback =
+          (X509Certificate cert, String host, int port) => true;
+  }
+}
+
+void main() {
+  HttpOverrides.global = new MyHttpOverrides();
+  runApp(new MyApp());
+}
 
 class MyApp extends StatelessWidget {
   @override
