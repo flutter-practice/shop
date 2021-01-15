@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:provider/provider.dart';
+import 'package:shop/exceptions/http_exception.dart';
 import 'package:shop/models/product.dart';
 import 'package:shop/provider/cart_provider.dart';
 import 'package:shop/utils/app_routes.dart';
@@ -8,6 +9,7 @@ import 'package:shop/utils/app_routes.dart';
 class ProductGridItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    final scaffold = Scaffold.of(context);
     final Product product = Provider.of<Product>(context, listen: false);
     final CartProvider cart = Provider.of<CartProvider>(context, listen: false);
     return ClipRRect(
@@ -32,8 +34,15 @@ class ProductGridItem extends StatelessWidget {
               icon: Icon(
                   product.isFavorite ? Icons.favorite : Icons.favorite_border),
               color: Theme.of(context).accentColor,
-              onPressed: () {
-                product.toggleFavorite();
+              onPressed: () async {
+                try {
+                  await product.toggleFavorite();
+                }
+                on HttpException catch(error) {
+                  scaffold.showSnackBar(SnackBar(
+                    content: Text(error.toString()),
+                  ));
+                }
               },
             ),
           ),
