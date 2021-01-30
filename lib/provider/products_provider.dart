@@ -8,24 +8,33 @@ import 'package:shop/utils/constants.dart';
 class ProductsProvider with ChangeNotifier {
   final String _baseUrl = '${Constants.BASE_API_URL}/products';
   List<Product> _items = [];
+  String _token;
+  String _userId;
+
+  ProductsProvider([this._token, this._userId, this._items = const []]);
 
   List<Product> get items => [..._items];
   List<Product> get favoriteItems =>
       _items.where((prod) => prod.isFavorite).toList();
 
   Future<void> loadProducts() async {
-    final response = await http.get("$_baseUrl.json");
+    final response = await http.get("$_baseUrl.json?auth=$_token");
+    final favoritesResponse = await http.get(
+        "${Constants.BASE_API_URL}/userFavorite/$_userId.json?auth=$_token");
+    final favoriteMap = json.decode(favoritesResponse.body);
     Map<String, dynamic> data = json.decode(response.body);
     _items.clear();
     if (data != null) {
       data.forEach((productId, productData) {
+        final isFavorite =
+            favoriteMap == null ? false : favoriteMap[productId] ?? false;
         _items.add(Product(
           id: productId,
           title: productData['title'],
           description: productData['description'],
           price: productData['price'],
           imageUrl: productData['imageUrl'],
-          isFavorite: productData['isFavorite'],
+          isFavorite: isFavorite,
         ));
       });
       notifyListeners();
@@ -38,13 +47,12 @@ class ProductsProvider with ChangeNotifier {
     // Save product in DB
     return http
         .post(
-      "$_baseUrl.json",
+      "$_baseUrl.json?auth=$_token",
       body: json.encode({
         'title': product.title,
         'description': product.description,
         'price': product.price,
         'imageUrl': product.imageUrl,
-        'isFavorite': product.isFavorite,
       }),
     )
         .then((response) {
@@ -66,7 +74,7 @@ class ProductsProvider with ChangeNotifier {
     final productIndex = _items.indexWhere((prod) => prod.id == product.id);
     if (productIndex >= 0) {
       await http.patch(
-        "$_baseUrl/${product.id}.json",
+        "$_baseUrl/${product.id}.json?auth=$_token",
         body: json.encode({
           'title': product.title,
           'description': product.description,
@@ -85,7 +93,8 @@ class ProductsProvider with ChangeNotifier {
       final product = _items[productIndex];
       _items.removeWhere((prod) => prod.id == id);
       notifyListeners();
-      final response = await http.delete("$_baseUrl/${product.id}.json");
+      final response =
+          await http.delete("$_baseUrl/${product.id}.json?auth=$_token");
       // Error
       if (response.statusCode >= 400) {
         // Add product back to local list

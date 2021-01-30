@@ -1,13 +1,10 @@
 import 'dart:convert';
-
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:shop/exceptions/http_exception.dart';
 import 'package:shop/utils/constants.dart';
 
 class Product with ChangeNotifier {
-  final String _baseUrl =
-      '${Constants.BASE_API_URL}/products';
   final String id;
   final String title;
   final String description;
@@ -24,13 +21,14 @@ class Product with ChangeNotifier {
     this.isFavorite = false,
   });
 
-  Future<void> toggleFavorite() async {
+  Future<void> toggleFavorite(String token, String userId) async {
+    final String _baseUrl = '${Constants.BASE_API_URL}/userFavorite/$userId/';
     isFavorite = !isFavorite;
     notifyListeners();
     // Persist change in DB
-    final response = await http.patch(
-      "$_baseUrl/$id.json",
-      body: json.encode({'isFavorite': isFavorite}),
+    final response = await http.put(
+      "$_baseUrl/$id.json?auth=$token",
+      body: json.encode(isFavorite),
     );
     // Error
     if (response.statusCode >= 400) {
